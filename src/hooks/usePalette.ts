@@ -22,7 +22,7 @@ function isPaletteColor(value: unknown): value is PaletteColor {
   );
 }
 
-function isPaletteColorArray(value: unknown): value is PaletteColor[] {
+export function isPaletteColorArray(value: unknown): value is PaletteColor[] {
   return Array.isArray(value) && value.every(isPaletteColor);
 }
 
@@ -78,5 +78,12 @@ export function usePalette() {
     [setPalette],
   );
 
-  return { palette, addColor, addLibraryColors, removeColor };
+  const replace = useCallback(
+    (colors: PaletteColor[]) => {
+      setPalette(colors);
+    },
+    [setPalette],
+  );
+
+  return { palette, addColor, addLibraryColors, removeColor, replace };
 }

@@ -8,9 +8,10 @@ interface LibraryColorPickerProps {
   palette: PaletteColor[];
   onSave: (colors: Array<{ hex: string; code: string; nameRu: string; yarnName: string }>) => void;
   onClose: () => void;
+  singleSelect?: boolean;
 }
 
-export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPickerProps) {
+export function LibraryColorPicker({ palette, onSave, onClose, singleSelect = false }: LibraryColorPickerProps) {
   const [filter, setFilter] = useState('');
   const [pickedKeys, setPickedKeys] = useState<Set<string>>(new Set());
 
@@ -20,6 +21,9 @@ export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPic
 
   function toggle(key: string) {
     setPickedKeys((current) => {
+      if (singleSelect) {
+        return current.has(key) ? new Set() : new Set([key]);
+      }
       const next = new Set(current);
       if (next.has(key)) {
         next.delete(key);
@@ -50,7 +54,7 @@ export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPic
         value={filter}
         onChange={(event) => setFilter(event.target.value)}
         placeholder="Поиск по коду или названию"
-        className="w-full rounded-xl border border-stone-200 px-3 py-1.5 text-sm outline-none focus:border-stone-400"
+        className="w-full rounded-xl border border-stone-200 px-3 py-1.5 text-base outline-none focus:border-stone-400"
       />
 
       <div className="flex max-h-80 flex-col gap-5 overflow-y-auto pr-1">
@@ -66,19 +70,23 @@ export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPic
           }
           return (
             <div key={entry.yarnName}>
-              <p className="mb-2 text-sm font-medium text-stone-500">{entry.yarnName}</p>
+              <p className="mb-2 text-base font-medium text-stone-500">{entry.yarnName}</p>
               <div className="flex flex-wrap gap-3">
                 {colors.map((color) => {
                   const key = `${entry.yarnName}:${color.code}`;
-                  const dimmed = existingHexes.has(normalizeHex(color.hex));
+                  const alreadyInPalette = existingHexes.has(normalizeHex(color.hex));
+                  // In singleSelect (primary color) mode, an already-added color can still be picked.
+                  const blocked = alreadyInPalette && !singleSelect;
                   return (
                     <HeartSwatch
                       key={key}
                       hex={color.hex}
                       code={color.code}
-                      dimmed={dimmed}
+                      size={52}
+                      dimmed={blocked}
+                      note={alreadyInPalette ? 'в палитре' : undefined}
                       picked={pickedKeys.has(key)}
-                      onClick={dimmed ? undefined : () => toggle(key)}
+                      onClick={blocked ? undefined : () => toggle(key)}
                     />
                   );
                 })}
@@ -92,7 +100,7 @@ export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPic
         <button
           type="button"
           onClick={onClose}
-          className="rounded-full px-3 py-1.5 text-sm text-stone-500 hover:bg-stone-50"
+          className="rounded-full px-3 py-1.5 text-base text-stone-500 hover:bg-stone-50"
         >
           Закрыть
         </button>
@@ -100,7 +108,7 @@ export function LibraryColorPicker({ palette, onSave, onClose }: LibraryColorPic
           type="button"
           onClick={handleSave}
           disabled={pickedKeys.size === 0}
-          className="rounded-full bg-stone-800 px-3 py-1.5 text-sm text-white hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-full bg-stone-800 px-3 py-1.5 text-base text-white hover:bg-stone-700 disabled:cursor-not-allowed disabled:opacity-40"
         >
           Сохранить
         </button>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { PaletteColor } from '../types';
+import { normalizeHex } from '../utils/color';
 import { AddColorForm } from './AddColorForm';
 import { LibraryColorPicker } from './LibraryColorPicker';
 
@@ -10,9 +11,18 @@ interface AddColorModalProps {
   onAddColor: (hex: string) => boolean;
   onAddLibraryColors: (colors: Array<{ hex: string; code: string; nameRu: string; yarnName: string }>) => void;
   onClose: () => void;
+  singleSelect?: boolean;
+  onColorPicked?: (color: Omit<PaletteColor, 'id'>) => void;
 }
 
-export function AddColorModal({ palette, onAddColor, onAddLibraryColors, onClose }: AddColorModalProps) {
+export function AddColorModal({
+  palette,
+  onAddColor,
+  onAddLibraryColors,
+  onClose,
+  singleSelect = false,
+  onColorPicked,
+}: AddColorModalProps) {
   const [tab, setTab] = useState<Tab>('custom');
 
   return (
@@ -23,7 +33,7 @@ export function AddColorModal({ palette, onAddColor, onAddLibraryColors, onClose
             <button
               type="button"
               onClick={() => setTab('custom')}
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
+              className={`rounded-full px-3 py-1 text-base font-medium ${
                 tab === 'custom' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'
               }`}
             >
@@ -32,7 +42,7 @@ export function AddColorModal({ palette, onAddColor, onAddLibraryColors, onClose
             <button
               type="button"
               onClick={() => setTab('library')}
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
+              className={`rounded-full px-3 py-1 text-base font-medium ${
                 tab === 'library' ? 'bg-white text-stone-800 shadow-sm' : 'text-stone-500'
               }`}
             >
@@ -55,6 +65,7 @@ export function AddColorModal({ palette, onAddColor, onAddLibraryColors, onClose
             onSave={(hex) => {
               const success = onAddColor(hex);
               if (success) {
+                onColorPicked?.({ hex: normalizeHex(hex) });
                 onClose();
               }
               return success;
@@ -64,8 +75,13 @@ export function AddColorModal({ palette, onAddColor, onAddLibraryColors, onClose
         ) : (
           <LibraryColorPicker
             palette={palette}
+            singleSelect={singleSelect}
             onSave={(colors) => {
               onAddLibraryColors(colors);
+              const [color] = colors;
+              if (singleSelect && color) {
+                onColorPicked?.(color);
+              }
               onClose();
             }}
             onClose={onClose}

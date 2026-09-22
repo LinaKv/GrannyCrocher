@@ -33,17 +33,6 @@ export function useWorkingSquare() {
     createDefaultRows(),
   );
 
-  const addRow = useCallback(() => {
-    setRows((current) => [...current, { id: createId(), colorId: null }]);
-  }, [setRows]);
-
-  const removeRow = useCallback(
-    (id: string) => {
-      setRows((current) => current.filter((row) => row.id !== id));
-    },
-    [setRows],
-  );
-
   const setRowColor = useCallback(
     (id: string, colorId: string | null) => {
       setRows((current) => current.map((row) => (row.id === id ? { ...row, colorId } : row)));
@@ -51,5 +40,14 @@ export function useWorkingSquare() {
     [setRows],
   );
 
-  return { rows, addRow, removeRow, setRowColor };
+  const resetColors = useCallback(
+    (preserveIds?: Set<string>) => {
+      setRows((current) =>
+        current.map((row) => (preserveIds?.has(row.id) ? row : { ...row, colorId: null })),
+      );
+    },
+    [setRows],
+  );
+
+  return { rows, setRowColor, resetColors };
 }

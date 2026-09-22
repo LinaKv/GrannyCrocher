@@ -9,6 +9,8 @@ interface HeartSwatchProps {
   code?: string;
   picked?: boolean;
   dimmed?: boolean;
+  note?: string;
+  usedInSquare?: boolean;
 }
 
 const HEART_PATH =
@@ -23,6 +25,8 @@ export function HeartSwatch({
   code,
   picked = false,
   dimmed = false,
+  note,
+  usedInSquare = false,
 }: HeartSwatchProps) {
   return (
     <div className="relative inline-flex flex-col items-center gap-1">
@@ -41,15 +45,22 @@ export function HeartSwatch({
         </button>
 
         {selected && (
-          <span className="pointer-events-none absolute inset-0 flex items-center justify-center text-white drop-shadow">
+          <span className="pointer-events-none absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] leading-none text-white shadow ring-1 ring-white">
             ✓
           </span>
         )}
 
+        {usedInSquare && (
+          <span
+            title="Этот цвет уже используется в квадрате"
+            className="absolute -left-1 -top-1 h-3 w-3 rounded-full bg-stone-500 shadow ring-1 ring-white"
+          />
+        )}
+
         {code && (
           <span
-            className="pointer-events-none absolute inset-0 flex items-center justify-center text-[9px] font-medium leading-none"
-            style={{ color: getReadableTextColor(hex) }}
+            className="pointer-events-none absolute inset-0 flex items-center justify-center font-medium leading-none"
+            style={{ color: getReadableTextColor(hex), fontSize: Math.max(9, size * 0.24) }}
           >
             {code}
           </span>
@@ -73,7 +84,7 @@ export function HeartSwatch({
         )}
       </div>
 
-      {dimmed && <span className="text-[9px] text-stone-400">в палитре</span>}
+      {note && <span className="text-[9px] text-stone-400">{note}</span>}
     </div>
   );
 }

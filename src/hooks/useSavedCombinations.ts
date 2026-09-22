@@ -20,7 +20,7 @@ function isSavedCombination(value: unknown): value is SavedCombination {
   );
 }
 
-function isSavedCombinationArray(value: unknown): value is SavedCombination[] {
+export function isSavedCombinationArray(value: unknown): value is SavedCombination[] {
   return Array.isArray(value) && value.every(isSavedCombination);
 }
 
@@ -50,5 +50,12 @@ export function useSavedCombinations() {
     [setCombinations],
   );
 
-  return { combinations, save, remove };
+  const replace = useCallback(
+    (next: SavedCombination[]) => {
+      setCombinations(next);
+    },
+    [setCombinations],
+  );
+
+  return { combinations, save, remove, replace };
 }
