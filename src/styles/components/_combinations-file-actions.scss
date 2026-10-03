@@ -1,0 +1,23 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.combinations-file-actions {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(2);
+  width: 100%;
+
+  @include m.mq(lg) {
+    flex-direction: row;
+    width: auto;
+  }
+}
+
+.combinations-file-actions__button {
+  width: 100%;
+
+  @include m.mq(lg) {
+    width: auto;
+    white-space: nowrap;
+  }
+}

@@ -29,11 +29,11 @@ export function ImportCombinationsButton({ onImport }: ImportCombinationsButtonP
   }
 
   return (
-    <div className="w-full lg:w-auto">
+    <div className="combinations-file-actions__button">
       <button
         type="button"
         onClick={() => inputRef.current?.click()}
-        className="w-full lg:w-auto rounded-full bg-stone-100 px-3 py-2 lg:px-4 lg:py-2 text-base font-medium text-stone-700 hover:bg-stone-200"
+        className="button button--secondary button--lg combinations-file-actions__button"
       >
         Загрузить комбинации
       </button>
@@ -42,9 +42,9 @@ export function ImportCombinationsButton({ onImport }: ImportCombinationsButtonP
         type="file"
         accept=".json,application/json"
         onChange={handleFileChange}
-        className="hidden"
+        className="import-combinations-button__input"
       />
-      {error && <p className="mt-1 text-sm text-red-600">{error}</p>}
+      {error && <p className="import-combinations-button__error">{error}</p>}
 
       {pendingData && (
         <ImportCombinationsModal

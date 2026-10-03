@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Redirecting…</title>
+    <script>
+      // GitHub Pages has no server-side rewrites for a SPA — this packs the
+      // requested path into a query string so index.html can restore it.
+      // segmentsToKeep = 1 keeps "/GrannyCrocher" from the path.
+      var segmentsToKeep = 1;
+      var l = window.location;
+      var segments = l.pathname.split('/').slice(1, 1 + segmentsToKeep).join('/');
+      l.replace(
+        l.protocol + '//' + l.hostname + (l.port ? ':' + l.port : '') +
+        '/' + segments + '/?/' +
+        l.pathname.slice(1 + segments.length).replace(/&/g, '~and~') +
+        (l.search ? '&' + l.search.slice(1).replace(/&/g, '~and~') : '') +
+        l.hash
+      );
+    </script>
+  </head>
+  <body></body>
+</html>

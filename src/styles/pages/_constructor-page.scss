@@ -1,0 +1,157 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.constructor-page__container {
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 56rem;
+  gap: v.spacing(6);
+
+  @include m.mq(lg) {
+    gap: v.spacing(10);
+  }
+}
+
+// Locked to the viewport at every width (cancelling .app-shell__content's
+// own padding), same reasoning as .knit-square-page: the square should
+// fit whichever of width/height is actually scarce, not just stretch to
+// full width and let the page scroll past it on a short/landscape screen.
+// Saved combinations below the hero extend past this fixed height,
+// revealed by scrolling the page.
+.constructor-page__hero {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(6);
+  height: calc(100vh - #{v.spacing(6) * 2});
+  height: calc(100dvh - #{v.spacing(6) * 2});
+
+  @include m.mq(lg) {
+    gap: v.spacing(10);
+    height: calc(100vh - #{v.spacing(10) * 2});
+    height: calc(100dvh - #{v.spacing(10) * 2});
+  }
+}
+
+.constructor-page__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: v.$color-text-heading;
+
+  @include m.mq(lg) {
+    font-size: 1.5rem;
+  }
+}
+
+.constructor-page__subtitle {
+  font-size: 1rem;
+  color: v.$color-text-secondary;
+}
+
+// Stacked (square, then buttons, then palette — plain DOM order) below xl,
+// side by side (square left, controls right) from xl up — row layout is
+// reserved for real laptop widths, not landscape tablets (see
+// _variables.scss for why this is xl and not lg).
+.constructor-page__columns {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 0%;
+  min-height: 0;
+  gap: v.spacing(6);
+
+  @include m.mq(xl) {
+    flex-direction: row;
+    align-items: stretch;
+    gap: v.spacing(8);
+  }
+}
+
+// flex: 0 1 auto + aspect-ratio lets this shrink in step with whichever of
+// width/height the hero actually has less of (native flexbox + aspect-ratio
+// interaction — same mechanism _knit-square-page.scss uses), so the square
+// never forces a scroll just to fit on a short/landscape screen.
+.constructor-page__square-column {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 1 auto;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  aspect-ratio: 1;
+
+  @include m.mq(xl) {
+    width: auto;
+  }
+}
+
+// Transparent (display: contents) below xl — SquareActions and
+// ColorActionsPanel act as if they were direct children of .columns, so
+// all three (square, actions, colors) compete in one shared shrink
+// priority order. From xl it becomes a real column, grouping the two back
+// together as the single right-hand side next to the square.
+.constructor-page__right-column-group {
+  display: contents;
+
+  @include m.mq(xl) {
+    display: flex;
+    flex-direction: column;
+    gap: v.spacing(4);
+    flex: 1 1 0%;
+    min-height: 0;
+  }
+}
+
+// Always its natural size, flex-shrink: 0 — this must stay visible next to
+// the square without scrolling, same as the square itself. Side by side
+// (not stacked) so this natural size is as short as possible, leaving more
+// of the hero's height for the square.
+.constructor-page__square-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: v.spacing(2);
+  width: 100%;
+
+  .button {
+    width: auto;
+    flex: 1 1 0%;
+  }
+}
+
+// Below xl this is the one thing allowed to give up space: a flex-shrink
+// this much larger than the square's (1) means it absorbs essentially all
+// of any squeeze — down to 0, scrolling internally via
+// .right-column-scroll — before the square gives up any of its own size.
+// From xl this constraint doesn't apply (the square's shrink priority is
+// handled at the .columns level instead, not shared with this column), so
+// it reverts to a plain flex: 1 1 0%.
+.constructor-page__right-column {
+  display: flex;
+  flex-direction: column;
+  flex: 1 100000 0%;
+  min-height: 0;
+  gap: v.spacing(4);
+  width: 100%;
+
+  @include m.mq(xl) {
+    flex: 1 1 0%;
+  }
+}
+
+.constructor-page__right-column-scroll {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(4);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.constructor-page__action-button {
+  width: 100%;
+
+  // Tied to xl, not lg — matches when .constructor-page__columns actually
+  // switches to a row; otherwise this would shrink to a fixed, oddly
+  // left-aligned width while the layout is still a stacked column.
+  @include m.mq(xl) {
+    width: 20rem;
+  }
+}

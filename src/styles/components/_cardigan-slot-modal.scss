@@ -1,0 +1,29 @@
+@use '../abstracts/variables' as v;
+
+.cardigan-slot-modal__header {
+  margin-bottom: v.spacing(3);
+}
+
+.cardigan-slot-modal__close {
+  border-radius: 9999px;
+  padding: v.spacing(1) v.spacing(2);
+  color: v.$color-text-muted;
+
+  &:hover {
+    background: v.$color-surface-hover;
+    color: v.$color-text-strong;
+  }
+}
+
+.cardigan-slot-modal__clear {
+  margin-bottom: v.spacing(3);
+}
+
+.cardigan-slot-modal__grid {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.cardigan-slot-modal__option {
+  cursor: pointer;
+}

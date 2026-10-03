@@ -1,0 +1,93 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.sidebar__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  background: v.$color-overlay;
+
+  @include m.mq(xl) {
+    display: none;
+  }
+}
+
+// Below xl the sidebar is a slide-in drawer (off-canvas by default, shown
+// via the menu trigger + .sidebar--open) so it doesn't eat into the
+// already-tight width next to the main content — this now covers tablets
+// too, not just phones (see _variables.scss for why this is xl and not lg).
+// From xl up it reverts to the plain, always-visible column it always was.
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  z-index: 90;
+  width: 16rem;
+  max-width: 80vw;
+  transform: translateX(-100%);
+  transition: transform 0.2s ease;
+  padding: v.spacing(4);
+  background: v.$color-surface;
+  border-right: 1px solid v.$color-border;
+  overflow-y: auto;
+
+  &--open {
+    transform: translateX(0);
+  }
+
+  @include m.mq(xl) {
+    position: static;
+    flex-shrink: 0;
+    width: 12rem;
+    max-width: none;
+    transform: none;
+    transition: none;
+  }
+}
+
+.sidebar__nav {
+  gap: v.spacing(1);
+}
+
+// Pinned to the bottom of the sidebar regardless of how many nav links
+// there are, set apart from them with a divider — a deliberate, infrequent
+// action (it replaces all your data on import), not another nav item.
+.sidebar__file-actions {
+  margin-top: auto;
+  padding-top: v.spacing(4);
+  border-top: 1px solid v.$color-border;
+
+  // .combinations-file-actions switches to a row at lg because it's
+  // normally placed in a wide page header — but here it's boxed into the
+  // sidebar's own fixed width regardless of viewport width, so it should
+  // stay stacked instead of trying to fit both buttons side by side.
+  .combinations-file-actions {
+    flex-direction: column;
+    width: 100%;
+  }
+
+  .combinations-file-actions__button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+.sidebar__link {
+  display: block;
+  border-radius: 9999px;
+  padding: v.spacing(2) v.spacing(3);
+  font-size: 1rem;
+  font-weight: 500;
+  color: v.$color-text-strong;
+  text-decoration: none;
+
+  &:hover {
+    background: v.$color-surface-hover;
+  }
+}
+
+.sidebar__link--active {
+  background: v.$color-surface-muted;
+  color: v.$color-text-heading;
+}

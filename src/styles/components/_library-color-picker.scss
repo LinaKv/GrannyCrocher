@@ -1,0 +1,20 @@
+@use '../abstracts/variables' as v;
+
+.library-color-picker__filter {
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid v.$color-border;
+  padding: v.spacing(1.5) v.spacing(3);
+  font-size: 1rem;
+  outline: none;
+
+  &:focus {
+    border-color: v.$color-border-focus;
+  }
+}
+
+.library-color-picker__list {
+  max-height: 20rem;
+  overflow-y: auto;
+  padding-right: v.spacing(1);
+}

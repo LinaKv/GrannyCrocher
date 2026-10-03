@@ -1,0 +1,61 @@
+@use 'sass:map';
+
+$breakpoints: (
+  lg: 1024px,
+  // Only for the constructor/knit-square square+controls layout: row
+  // layout should kick in at real laptop widths, not landscape-tablet
+  // widths (iPad Pro 13" landscape is 1376px) — everything else (sidebar,
+  // grid columns, type scale) still switches at lg.
+  xl: 1440px,
+);
+
+$spacing: (
+  1: 0.25rem,
+  1.5: 0.375rem,
+  2: 0.5rem,
+  3: 0.75rem,
+  4: 1rem,
+  5: 1.25rem,
+  6: 1.5rem,
+  8: 2rem,
+  10: 2.5rem,
+);
+
+@function spacing($key) {
+  @return map.get($spacing, $key);
+}
+
+// Colors are named by role. Values are carried over from the previous Tailwind palette.
+$color-page-bg: #fdfcfb;
+$color-text-base: #3f3a44;
+
+$color-primary: #292524;
+$color-text-heading: $color-primary;
+$color-text-strong: #44403c;
+$color-primary-hover: $color-text-strong;
+$color-text-label: #57534e;
+$color-text-secondary: #78716c;
+$color-used-indicator: $color-text-secondary;
+$color-text-muted: #a8a29e;
+$color-border-focus: $color-text-muted;
+$color-text-inverse: #ffffff;
+
+$color-surface: #ffffff;
+$color-surface-muted: #f5f5f4;
+$color-border: #e7e5e4;
+$color-surface-muted-hover: $color-border;
+$color-surface-hover: #fafaf9;
+
+$color-danger: #dc2626;
+$color-danger-hover: #b91c1c;
+
+$color-validation-error: #f43f5e;
+$color-success: #10b981;
+
+$color-overlay: rgba(28, 25, 23, 0.4);
+
+$shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+$shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);

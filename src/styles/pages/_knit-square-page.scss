@@ -1,0 +1,100 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+// Locked to the viewport at every width (cancelling .app-shell__content's
+// own padding) so the controls never end up hidden below a scroll. Below xl
+// this box IS the shared container: controls take only the height their
+// content needs (flex: 0 0 auto, no shrink), and the square gets whatever
+// height is left (flex: 1 1 0%) — so whenever that leftover height is
+// enough to let a full-width square fit (the common case), the square
+// fills the same width as the controls below it exactly. From xl up
+// there's room to spare horizontally next to the sidebar instead, so it
+// switches to a row (square left, controls right) — reserved for real
+// laptop widths, not landscape tablets (see _variables.scss for why this
+// is xl and not lg).
+.knit-square-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: v.spacing(4);
+  height: calc(100vh - #{v.spacing(6) * 2});
+  height: calc(100dvh - #{v.spacing(6) * 2});
+
+  @include m.mq(lg) {
+    height: calc(100vh - #{v.spacing(10) * 2});
+    height: calc(100dvh - #{v.spacing(10) * 2});
+  }
+
+  @include m.mq(xl) {
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: center;
+    gap: v.spacing(8);
+  }
+}
+
+.knit-square-page__preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 0%;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+
+  // From xl the square's own height (not leftover row space) sets its
+  // width, so the box shouldn't grow past it — otherwise the controls
+  // column ends up stranded at the far right instead of next to the square.
+  // aspect-ratio derives a definite width from the stretched height;
+  // without it, width:auto and the square's own max-width:100% depend on
+  // each other and both collapse to zero.
+  @include m.mq(xl) {
+    flex: 0 1 auto;
+    width: auto;
+    aspect-ratio: 1;
+  }
+}
+
+.knit-square-page__controls {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  gap: v.spacing(4);
+  width: 100%;
+
+  @include m.mq(xl) {
+    flex: 0 0 20rem;
+    justify-content: center;
+  }
+}
+
+.knit-square-page__row-progress {
+  color: v.$color-text-secondary;
+}
+
+.knit-square-page__current-color {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  gap: v.spacing(2);
+}
+
+.knit-square-page__actions {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(2);
+
+  .button {
+    width: 100%;
+  }
+}
+
+.knit-square-page__step-actions {
+  display: flex;
+  gap: v.spacing(2);
+
+  .button {
+    width: auto;
+    flex: 1 1 0%;
+  }
+}

@@ -1,0 +1,29 @@
+@use '../abstracts/variables' as v;
+
+.tracked-square-menu {
+  position: fixed;
+  z-index: 50;
+  overflow: hidden;
+  font-size: 1rem;
+  box-shadow: v.$shadow-lg;
+}
+
+.tracked-square-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.tracked-square-menu__item {
+  padding: v.spacing(2) v.spacing(4);
+  text-align: left;
+  color: v.$color-text-strong;
+
+  &:hover {
+    background: v.$color-surface-hover;
+  }
+
+  &--danger {
+    color: v.$color-danger;
+  }
+}

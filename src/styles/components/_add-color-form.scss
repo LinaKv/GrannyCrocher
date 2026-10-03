@@ -1,0 +1,37 @@
+@use '../abstracts/variables' as v;
+
+.add-color-form {
+  padding: v.spacing(4);
+  box-shadow: v.$shadow-md;
+}
+
+.add-color-form__label {
+  display: block;
+  font-size: 1rem;
+  font-weight: 500;
+  color: v.$color-text-label;
+}
+
+.add-color-form__input {
+  margin-top: v.spacing(1);
+  width: 100%;
+  border-radius: 0.75rem;
+  border: 1px solid v.$color-border;
+  padding: v.spacing(1.5) v.spacing(3);
+  font-size: 1rem;
+  outline: none;
+
+  &:focus {
+    border-color: v.$color-border-focus;
+  }
+}
+
+.add-color-form__error {
+  margin-top: v.spacing(1);
+  font-size: 1rem;
+  color: v.$color-validation-error;
+}
+
+.add-color-form__actions {
+  margin-top: v.spacing(3);
+}

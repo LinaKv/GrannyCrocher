@@ -1,0 +1,37 @@
+@use '../abstracts/variables' as v;
+
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: v.$color-overlay;
+  padding: v.spacing(4);
+}
+
+.modal__panel {
+  width: 100%;
+  max-width: 28rem;
+  border-radius: 1rem;
+  background: v.$color-surface;
+  padding: v.spacing(5);
+  box-shadow: v.$shadow-xl;
+}
+
+.modal__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: v.$color-text-heading;
+}
+
+.modal__description {
+  margin-top: v.spacing(2);
+  font-size: 1rem;
+  color: v.$color-text-secondary;
+}
+
+.modal__actions {
+  margin-top: v.spacing(5);
+}

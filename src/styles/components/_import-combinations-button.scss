@@ -1,0 +1,11 @@
+@use '../abstracts/variables' as v;
+
+.import-combinations-button__input {
+  display: none;
+}
+
+.import-combinations-button__error {
+  margin-top: v.spacing(1);
+  font-size: 0.875rem;
+  color: v.$color-danger;
+}

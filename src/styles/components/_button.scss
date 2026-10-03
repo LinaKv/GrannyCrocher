@@ -1,0 +1,91 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 1rem;
+  text-align: center;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  &:disabled {
+    cursor: not-allowed;
+    opacity: 0.4;
+  }
+}
+
+.button--primary {
+  background: v.$color-primary;
+  color: v.$color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background: v.$color-primary-hover;
+  }
+}
+
+.button--secondary {
+  background: v.$color-surface-muted;
+  color: v.$color-text-strong;
+
+  &:hover:not(:disabled) {
+    background: v.$color-surface-muted-hover;
+  }
+}
+
+.button--danger {
+  background: v.$color-danger;
+  color: v.$color-text-inverse;
+
+  &:hover:not(:disabled) {
+    background: v.$color-danger-hover;
+  }
+
+  // This variant swaps colors instead of fading — matches the original reset button.
+  &:disabled {
+    background: v.$color-surface-muted;
+    color: v.$color-text-muted;
+    opacity: 1;
+  }
+}
+
+.button--ghost {
+  background: none;
+  color: v.$color-text-secondary;
+
+  &:hover:not(:disabled) {
+    background: v.$color-surface-hover;
+  }
+}
+
+.button--lg {
+  padding: v.spacing(2) v.spacing(3);
+  font-weight: 500;
+
+  @include m.mq(lg) {
+    padding: v.spacing(2) v.spacing(4);
+  }
+}
+
+.button--modal {
+  padding: v.spacing(2) v.spacing(4);
+  font-weight: 500;
+}
+
+.button--sm {
+  padding: v.spacing(1.5) v.spacing(3);
+}
+
+.button--icon {
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+}
+
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: v.spacing(2);
+}

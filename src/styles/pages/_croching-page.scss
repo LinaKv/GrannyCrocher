@@ -1,0 +1,51 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.croching-page__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: v.$color-text-heading;
+}
+
+.croching-page__subtitle {
+  margin-top: v.spacing(2);
+  font-size: 1rem;
+  color: v.$color-text-secondary;
+}
+
+.croching-page__empty {
+  margin-top: v.spacing(4);
+}
+
+.croching-page__tabs {
+  display: flex;
+  gap: v.spacing(2);
+  margin-top: v.spacing(4);
+}
+
+.croching-page__tab {
+  flex: 1;
+  padding: v.spacing(2) v.spacing(3);
+  border-radius: 9999px;
+  background: v.$color-surface-muted;
+  color: v.$color-text-strong;
+  font-weight: 500;
+  text-align: center;
+
+  &--active {
+    background: v.$color-primary;
+    color: v.$color-text-inverse;
+  }
+}
+
+.croching-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: v.spacing(3);
+  margin-top: v.spacing(4);
+
+  @include m.mq(lg) {
+    grid-template-columns: repeat(4, 1fr);
+    gap: v.spacing(4);
+  }
+}

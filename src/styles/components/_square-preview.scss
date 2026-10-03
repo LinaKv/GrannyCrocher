@@ -1,0 +1,30 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+.square-preview {
+  position: relative;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: v.spacing(2);
+  box-shadow: v.$shadow-sm;
+
+  @include m.mq(lg) {
+    padding: v.spacing(3);
+  }
+}
+
+.square-preview__number {
+  position: absolute;
+  top: -0.25rem;
+  left: -0.25rem;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  background: v.$color-surface;
+  border: 1px solid v.$color-border;
+  box-shadow: v.$shadow;
+  color: v.$color-text-secondary;
+  font-size: 0.75rem;
+  line-height: 1.5;
+}

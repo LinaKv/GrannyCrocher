@@ -29,15 +29,17 @@ export function isNullablePaletteColor(value: unknown): value is PaletteColor | 
   return value === null || isPaletteColor(value);
 }
 
+// Read-only access to the stored primary color, with no row-syncing side
+// effect — for screens that only need to resolve colors (e.g. Croching).
+export function usePrimaryColorValue() {
+  return useLocalStorageState<PaletteColor | null>(STORAGE_KEY, isNullablePaletteColor, null);
+}
+
 export function usePrimaryColor(
   rows: SquareRow[],
   setRowColor: (id: string, colorId: string | null) => void,
 ) {
-  const [primaryColor, setPrimaryColorState] = useLocalStorageState<PaletteColor | null>(
-    STORAGE_KEY,
-    isNullablePaletteColor,
-    null,
-  );
+  const [primaryColor, setPrimaryColorState] = usePrimaryColorValue();
 
   const syncPrimaryRows = useCallback(
     (colorId: string | null) => {

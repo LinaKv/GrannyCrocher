@@ -1,0 +1,30 @@
+@use '../abstracts/variables' as v;
+
+.color-picker-popover {
+  position: fixed;
+  z-index: 50;
+  width: 16rem;
+  padding: v.spacing(4);
+  box-shadow: v.$shadow-xl;
+}
+
+.color-picker-popover__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+
+.color-picker-popover__label {
+  margin-bottom: v.spacing(3);
+  font-size: 1rem;
+  font-weight: 500;
+  color: v.$color-text-label;
+}
+
+.color-picker-popover__empty {
+  margin-bottom: v.spacing(3);
+}
+
+.color-picker-popover__swatches {
+  margin-bottom: v.spacing(3);
+}

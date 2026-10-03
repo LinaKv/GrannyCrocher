@@ -1,0 +1,11 @@
+@use '../abstracts/variables' as v;
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  font-family: system-ui, 'Segoe UI', Roboto, sans-serif;
+  background: v.$color-page-bg;
+  color: v.$color-text-base;
+}

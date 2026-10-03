@@ -1,21 +1,38 @@
 import { isPaletteColorArray } from '../hooks/usePalette';
 import { isNullablePaletteColor } from '../hooks/usePrimaryColor';
 import { isSavedCombinationArray } from '../hooks/useSavedCombinations';
-import type { PaletteColor, SavedCombination } from '../types';
+import {
+  emptyCardiganAssignments,
+  isCardiganAssignments,
+  type CardiganAssignments,
+} from '../hooks/useCardiganLayout';
+import type { PaletteColor, StoredCombination } from '../types';
 import { isRecord } from './validate';
 
 export interface CombinationsFile {
-  combinations: SavedCombination[];
+  combinations: StoredCombination[];
   palette: PaletteColor[];
   primaryColor: PaletteColor | null;
+  cardiganLayout: CardiganAssignments;
 }
 
-export function isCombinationsFile(value: unknown): value is CombinationsFile {
+function isOptionalCardiganAssignments(value: unknown): value is CardiganAssignments | undefined {
+  return value === undefined || isCardiganAssignments(value);
+}
+
+// cardiganLayout is optional on the wire — files exported before the
+// cardigan feature existed won't have it; importing one of those resets
+// the cardigan layout to empty, same "file is the new whole truth" rule
+// the rest of this import already follows.
+export function isCombinationsFile(
+  value: unknown,
+): value is Omit<CombinationsFile, 'cardiganLayout'> & { cardiganLayout?: CardiganAssignments } {
   return (
     isRecord(value) &&
     isSavedCombinationArray(value.combinations) &&
     isPaletteColorArray(value.palette) &&
-    isNullablePaletteColor(value.primaryColor)
+    isNullablePaletteColor(value.primaryColor) &&
+    isOptionalCardiganAssignments(value.cardiganLayout)
   );
 }
 
@@ -48,5 +65,5 @@ export async function parseCombinationsFile(file: File): Promise<CombinationsFil
     throw new Error('invalid-shape');
   }
 
-  return parsed;
+  return { ...parsed, cardiganLayout: parsed.cardiganLayout ?? emptyCardiganAssignments() };
 }

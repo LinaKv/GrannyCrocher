@@ -1,0 +1,23 @@
+.granny-square {
+  max-width: 100%;
+}
+
+.granny-square--fluid {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  max-height: 100%;
+}
+
+.granny-square__row--interactive {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+
+  &:hover {
+    opacity: 0.8;
+  }
+}
+
+.granny-square__row--locked {
+  cursor: not-allowed;
+}

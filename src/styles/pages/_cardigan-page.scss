@@ -1,0 +1,68 @@
+@use '../abstracts/variables' as v;
+@use '../abstracts/mixins' as m;
+
+// Width-driven, not height-driven: the diagram fills the available width
+// (up to a sane cap) and its height just follows from aspect-ratio. No
+// hero-height locking needed — the page takes whatever height that ends
+// up being, same as any normal page, scrolling if it ever has to.
+.cardigan-page {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(4);
+}
+
+.cardigan-page__title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: v.$color-text-heading;
+
+  @include m.mq(lg) {
+    font-size: 1.5rem;
+  }
+}
+
+.cardigan-page__tabs {
+  display: flex;
+  gap: v.spacing(2);
+}
+
+.cardigan-page__tab {
+  flex: 1;
+  padding: v.spacing(2) v.spacing(3);
+  border-radius: 9999px;
+  background: v.$color-surface-muted;
+  color: v.$color-text-strong;
+  font-weight: 500;
+  text-align: center;
+
+  @include m.mq(lg) {
+    flex: none;
+  }
+
+  &--active {
+    background: v.$color-primary;
+    color: v.$color-text-inverse;
+  }
+}
+
+.cardigan-page__diagram {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+// Capped so it doesn't turn into an unreadably huge, stretched diagram on
+// very wide monitors — matches .constructor-page__container's cap.
+.cardigan-page__canvas {
+  width: 100%;
+  max-width: 56rem;
+}
+
+.cardigan-page__grid {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  // Squares are sewn edge to edge, so this stays near-zero — the only
+  // deliberate gap is the seam track itself (see SEAM_TRACK_WIDTH).
+  gap: 2px;
+}

@@ -1,0 +1,38 @@
+@use '../abstracts/variables' as v;
+
+.cardigan-square-slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  // Filled slots sit flush, no card frame — squares that will be sewn
+  // together shouldn't look boxed apart. Only an empty slot (nothing to
+  // show yet) gets a visual hint that it's clickable.
+  &--empty {
+    border-radius: 0.75rem;
+    background: v.$color-surface-muted;
+    border: 1px dashed v.$color-border;
+  }
+}
+
+.cardigan-square-slot__placeholder {
+  font-size: 1.5rem;
+  color: v.$color-text-muted;
+}
+
+.cardigan-square-slot__done {
+  position: absolute;
+  top: 0.125rem;
+  right: 0.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 9999px;
+  background: v.$color-success;
+  color: v.$color-text-inverse;
+  font-size: 0.625rem;
+  line-height: 1;
+}

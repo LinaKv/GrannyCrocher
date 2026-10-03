@@ -1,0 +1,63 @@
+@use '../abstracts/variables' as v;
+
+.heart-swatch {
+  position: relative;
+  display: inline-flex;
+}
+
+.heart-swatch__frame {
+  position: relative;
+  display: inline-flex;
+}
+
+.heart-swatch__trigger {
+  height: 100%;
+  width: 100%;
+}
+
+.heart-swatch__badge {
+  pointer-events: none;
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  display: flex;
+  height: 1rem;
+  width: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: v.$color-success;
+  color: v.$color-text-inverse;
+  font-size: 10px;
+  line-height: 1;
+  box-shadow: v.$shadow;
+  border: 1px solid v.$color-surface;
+}
+
+.heart-swatch__used-indicator {
+  position: absolute;
+  top: -0.25rem;
+  left: -0.25rem;
+  height: 0.75rem;
+  width: 0.75rem;
+  border-radius: 9999px;
+  background: v.$color-used-indicator;
+  box-shadow: v.$shadow;
+  border: 1px solid v.$color-surface;
+}
+
+.heart-swatch__code {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.heart-swatch__note {
+  font-size: 9px;
+  color: v.$color-text-muted;
+}

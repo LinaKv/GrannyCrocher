@@ -1,16 +1,18 @@
 # Архитектура: Granny Square Color Planner
 
 Минимальная архитектура под требования из
-[docs/requirements.md](requirements.md), рассчитанная на то, чтобы позже
-спокойно добавить экспорт, раскладку кардигана и калькулятор пряжи, не
-переписывая основу.
+[docs/requirements.md](requirements.md). Раскладка кардигана (см. ниже)
+уже реализована; калькулятор пряжи остаётся следующим шагом и не требует
+переписывать основу.
 
 ## Стек
 
-- Vite + React + TypeScript
-- Tailwind CSS
-- Без стейт-менеджера — хватает React state + пары кастомных хуков.
-- Без роутера — один экран.
+- Vite + React + TypeScript (strict)
+- React Router (`react-router-dom`) — четыре маршрута, общий `Layout` со
+  сворачиваемым боковым меню
+- SCSS (7-1, вход `src/styles/main.scss`), классы по BEM
+- Без стейт-менеджера — хватает React state + набора кастомных хуков,
+  каждый отвечает за один ключ в localStorage
 
 ## Модель данных
 
@@ -34,12 +36,36 @@ interface SavedCombination {
   id: string;
   rows: Array<{ colorId: string | null }>;
   createdAt: number;
+  number: number; // присваивается один раз при сохранении, не пересчитывается
 }
+
+// Форма данных в localStorage/файле экспорта — `number` необязателен:
+// у комбинаций, сохранённых до появления нумерации, его нет.
+// useSavedCombinations достраивает number при загрузке.
+interface StoredCombination extends Omit<SavedCombination, 'number'> {
+  number?: number;
+}
+
+interface CrochetProgress {
+  done: boolean;
+  revealedRows: number; // сколько рядов открыто в пошаговом режиме вязания
+}
+
+// Один глобальный набор из 16 слотов кардигана: индекс = номер детали − 1.
+// Значение — id сохранённой комбинации, занимающей этот слот, либо null.
+type CardiganAssignments = Array<string | null>;
 ```
 
 `colorId: null` — ряд ещё не покрашен (нейтральный вид по умолчанию).
-Комбинация хранит цвета по ссылке на палитру, а не сам hex, чтобы удаление
-цвета из палитры было явным решением пользователя, а не побочным эффектом.
+Комбинация хранит цвета по ссылке на палитру, а не сам hex — это
+принципиальное решение (см. «Архив цветов» ниже), а не упрощение: оно
+позволяет удалять/заменять цвета в палитре, не трогая формат уже
+сохранённых данных.
+
+`SavedCombination.number` — стабильный порядковый номер квадрата, который
+не меняется при удалении других квадратов (в отличие от позиции в
+массиве). Присваивается в `useSavedCombinations.save()`/`duplicate()` как
+`max(существующих number) + 1`.
 
 Основной цвет («primary color») — это `PaletteColor | null`, но хранится и
 управляется отдельно от `palette` (свой хук, свой ключ в localStorage), а не
@@ -47,60 +73,323 @@ interface SavedCombination {
 из которой был скопирован, и всегда однозначно определять цвет
 заблокированных рядов.
 
+`CardiganAssignments` — эксклюзивное назначение: одна комбинация может
+занимать только один слот одновременно (физически это одна связанная
+деталь). `useCardiganLayout.assign` сам снимает комбинацию с прежнего
+слота при переназначении — см. «Кардиган» ниже.
+
 ## Хранение (localStorage)
 
-Четыре независимых ключа, каждый — отдельный хук со своим чтением/записью:
+Семь независимых ключей, каждый — отдельный хук со своим чтением/записью:
 
 - `granny-square:palette` → `PaletteColor[]`
 - `granny-square:primary-color` → `PaletteColor | null`
-- `granny-square:combinations` → `SavedCombination[]`
-- `granny-square:working-square` → `SquareRow[]` (ровно 7 элементов)
+- `granny-square:color-archive` → `PaletteColor[]` — цвета, убранные из
+  палитры или заменённые как основной; список только растёт, ничего не
+  удаляется (см. «Архив цветов»)
+- `granny-square:combinations` → `StoredCombination[]`
+- `granny-square:working-square` → `SquareRow[]` (ровно 7 элементов —
+  `DEFAULT_ROW_COUNT`, не мигрируется для уже существующих данных другой
+  длины)
+- `granny-square:progress` → `Record<SavedCombination['id'], CrochetProgress>`
+- `granny-square:cardigan` → `CardiganAssignments` (ровно 16 элементов —
+  `CARDIGAN_SLOT_COUNT`)
 
 Чтение из localStorage всегда проходит через runtime-валидацию (без `as`),
 битые данные — откат к дефолту, а не падение приложения.
 
 Экспорт/импорт (см. ниже) сериализует `palette` + `primaryColor` +
-`combinations` в один JSON-файл и переиспользует те же type guard'ы для
-валидации импортируемых данных.
+`combinations` + `cardiganLayout` в один JSON-файл и переиспользует те же
+type guard'ы для валидации импортируемых данных.
+`cardiganLayout` в файле необязателен — у файлов, экспортированных до
+появления кардигана, его нет; `parseCombinationsFile` подставляет пустую
+раскладку (`emptyCardiganAssignments()`), если поле отсутствует. Архив
+цветов и прогресс вязания в файл не попадают — импорт полностью заменяет
+комбинации, так что архивировать старые цвета незачем, а прогресс всё
+равно осиротеет (см. предупреждение в `ImportCombinationsModal`).
 
-## Структура файлов
+## Архив цветов
+
+Проблема: `colorById` на каждой странице строится заново из *текущих*
+`palette` + `primaryColor` — это живая ссылка, не снимок. Если цвет
+заменить (основной) или удалить (из палитры), id, уже записанный в
+сохранённых квадратах, перестаёт резолвиться, и ряд рисуется пустым.
+
+Решение — `useColorArchive`: при удалении цвета из палитры
+(`ConstructorPage.handleRemoveColor`) или замене основного цвета
+(`ConstructorPage.handleSetPrimaryColor`) старое значение сначала уходит в
+архив, и только потом заменяется/удаляется. Каждая страница, которая
+строит `colorById`/`paletteById` (`ConstructorPage`, `CrochingPage`,
+`KnitSquarePage`, `CardiganPage`), подмешивает архив в основу карты
+(активные `palette`/`primaryColor` перекрывают архивные записи, если id
+вдруг совпадут) — так уже сохранённые квадраты продолжают выглядеть как в
+момент сохранения, независимо от того, что происходит с палитрой дальше.
+
+Только `ConstructorPage` пишет в архив (там и происходит удаление/замена);
+остальные страницы — только читают.
+
+Рабочий (ещё не сохранённый) квадрат в конструкторе в архив не смотрит —
+он продолжает вести себя как раньше: ряд с удалённым цветом очищается,
+6–7 ряд сразу перекрашиваются в новый основной цвет. Защита архива
+касается только уже *сохранённых* квадратов.
+
+## Роутинг и layout
+
+```
+/                   ConstructorPage  — редактор квадрата
+/croching           CrochingPage     — список «Надо связать» / «Связано»
+/croching/:id       KnitSquarePage   — пошаговое вязание конкретного квадрата
+/cardigan           CardiganPage     — схема сборки кардигана из 16 квадратов
+```
+
+`App.tsx` — только `BrowserRouter`/`Routes`, никакой бизнес-логики. Общий
+`Layout` (`src/layout/Layout.tsx`) держит state открытости меню и рисует
+`Sidebar` + `<Outlet />` в `.app-shell__content`.
+
+### Два брейкпоинта, разная ответственность
+
+- **`lg` (1024px)`** — паддинги `.app-shell__content`, размер заголовков,
+  сетка `croching-page__grid` (2→4 колонки) и т.п. — обычная,
+  "дай-побольше-на-большом-экране" точка.
+- **`xl` (1440px)`** — отдельная, специально заведённая для двух вещей:
+  сворачивание сайдбара (`Sidebar`/`.app-shell__menu-trigger`) и
+  переключение «квадрат+управление» между колонкой и рядом
+  (`ConstructorPage`, `KnitSquarePage`). Планшет (портретный или
+  альбомный — iPad Pro 13" в альбомной ориентации 1376px шириной) уже
+  шире `lg`, но это всё ещё не тот экран, где стоит прятать квадрат узкой
+  колонкой рядом с панелью или терять ширину на постоянно открытый
+  сайдбар — `xl` ловит именно эту границу, `lg` его не трогает.
+
+### Сайдбар (`Layout.tsx`, `Sidebar.tsx`)
+
+Ниже `xl` — выезжающая панель: `.sidebar` зафиксирована за экраном
+(`transform: translateX(-100%)`), открывается кнопкой-бургером
+(`.app-shell__menu-trigger`, фиксирована в правом верхнем углу — левый
+верхний уже занят заголовками страниц) через `isOpen`/`onClose` в `Layout`,
+закрывается кликом по `.sidebar__backdrop` или по любому пункту меню. С
+`xl` — обычная всегда видимая колонка 12rem, как было изначально.
+
+### «Квадрат + управление»: ConstructorPage и KnitSquarePage
+
+Обе страницы используют общий приём, но в разных деталях — see комментарии
+в `_constructor-page.scss` / `_knit-square-page.scss` для точных значений.
+
+- Страница заперта по высоте экрана
+  (`calc(100dvh - паддинг*2)`, с `100vh`-фолбэком) — кроме
+  `ConstructorPage` ниже `xl`, где вместо этого используется обычная
+  высота и страница просто скроллится (см. ниже).
+- Ниже `xl`: колонка, **сначала квадрат, потом управление** (обычный DOM
+  порядок, не `column-reverse`). Квадрат — `flex: 1 1 0%; min-height: 0`
+  (забирает всё, что осталось после `__controls`, который занимает только
+  свою естественную высоту, `flex: 0 0 auto`), сам квадрат внутри
+  центрирован. Так квадрат всегда максимально большой при условии, что
+  кнопки управления остаются видны без скролла.
+- С `xl`: ряд, квадрат слева получает размер через `aspect-ratio: 1` от
+  уже известной (растянутой через `align-items: stretch`) высоты строки —
+  специально ломкая конструкция: оба измерения должны быть *определены*
+  заранее, иначе `width: auto` у квадрата и `max-width: 100%` у его
+  обёртки зависят друг от друга и схлопываются в ноль.
+- `KnitSquarePage` держит это ограничение по высоте на **всех** ширинах
+  (кнопки управления должны быть видны всегда, это важнее, чем квадрат на
+  всю ширину). `ConstructorPage` — только с `xl`: ниже него квадрат и
+  кнопки просто на всю ширину контейнера, страница естественной высоты,
+  скроллится к `SavedCombinations` под ней.
+- Известное ограничение (см. комментарии в коде): когда квадрату
+  действительно не хватает высоты и он вынужден сжаться уже контейнера,
+  кнопки управления (которые не привязаны к высоте) могут на мгновение
+  оказаться шире него — точное совпадение ширины в каждом случае
+  потребовало бы JS-замера (`ResizeObserver`), чистым CSS это не
+  выражается.
+
+На `ConstructorPage` под этим блоком, уже вне фиксированной высоты
+(с `xl`), в обычном потоке страницы лежит `SavedCombinations` — чтобы
+попасть туда, страницу нужно проскроллить.
+
+## Кардиган (`/cardigan`)
+
+Сборка кардигана из тех же 16 (максимум) сохранённых комбинаций — лимит
+«Сохранённые комбинации N/16» в конструкторе не случаен, это ровно
+столько деталей, сколько в схеме.
+
+### Геометрия (`src/pages/cardigan/layouts.ts`)
+
+Три вида одного и того же набора из 16 пронумерованных позиций, заданные
+как данные (номер слота → колонка/строка в 4-колоночной сетке), а не как
+CSS-селекторы:
+
+- **«Схема»** (`general`) — все 16, 4×6. Шов — между колонками 2 и 3,
+  только вдоль строк 1–3 (не продолжается в нижней половине).
+- **«Спина»** (`back`) — слоты 1–4, 9–12 (верхняя половина общей схемы),
+  4×3, но повёрнуты на 180° и отражены по горизонтали — так эта деталь
+  читается при вязании отдельно от неё. Шов — на всю высоту.
+- **«Перед»** (`front`) — слоты 5–8, 13–16 (нижняя половина), 4×3, та же
+  ориентация, что и в общей схеме. Шва нет: это две независимые открытые
+  полочки, а не сшитая деталь.
+
+Между колонками 2 и 3 всегда есть разрыв — либо с цветной линией шва
+(текущий основной цвет, резолвится через тот же `colorById`, что и
+остальные страницы — если основной цвет не выбран, линия просто не
+рисуется), либо пустой (на «Перед»). Разрыв сделан отдельным узким треком
+в `grid-template-columns` (`SEAM_TRACK_WIDTH = 0.5fr`, см.
+`toGridColumn()`), а не через обычный `gap` — иначе межколоночный отступ
+был бы одинаковым и между сшитыми соседними квадратами, и в месте шва.
+Сам `gap` между квадратами — 2px, почти вплотную, как при сшивании.
+
+`CardiganPage` сама не привязана к высоте экрана — диаграмма масштабируется
+по ширине (`width: 100%; max-width: 56rem`, как у `.constructor-page__container`),
+высота считается через `aspect-ratio` из количества колонок/строк
+текущего вида; страница просто скроллится, если не помещается.
+
+### Назначение квадратов (`useCardiganLayout`, `CardiganSlotModal`)
+
+Клик по любому слоту (`CardiganSquareSlot`, в любой из трёх схем) открывает
+`CardiganSlotModal` — сетку **ещё не назначенных** сохранённых комбинаций
+(`combinations.filter(c => !assignments.includes(c.id))`) + кнопку
+«Очистить», если слот уже занят. Выбор вызывает
+`useCardiganLayout.assign(slot, combinationId)`, который сам снимает эту
+комбинацию с прежнего слота, если она уже где-то стояла (эксклюзивность —
+см. модель данных выше). Слот хранит только номер; привязка к схеме —
+через `assignments[slot - 1]`, общая для всех трёх видов, поэтому
+переназначение в одной схеме сразу видно в двух других.
+
+Зелёная галочка на занятом слоте — `progress[combinationId]?.done` из
+`useCrochetProgress`, тот же источник, что и на `CrochingPage`; эта
+страница его только читает, отмечать готовым можно только через Croching.
+
+## Стили
+
+SCSS по методологии 7-1 (`src/styles/`), классы — BEM. Токены (цвет, отступы)
+именованы по роли (`$color-primary`, `$color-text-secondary`, `spacing(4)`),
+а не по исходной Tailwind-шкале — при смене палитры правится одно место в
+`abstracts/_variables.scss`.
+
+Повторяющиеся визуальные паттерны (кнопка, модалка, карточка, круглый
+"×"-бейдж, подпись/заголовок секции, пустое состояние) вынесены в общие
+блок-классы в `components/`. Компонент комбинирует общий блок и свой
+модификатор на одном элементе: `className="card add-color-form"`,
+`className="button button--secondary button--sm button--icon"`. Точечные,
+не переиспользуемые стили каждого компонента живут в одноимённом
+partial'е.
 
 ```
 src/
   main.tsx
-  App.tsx
-  types.ts                 общие типы (PaletteColor, SquareRow, SavedCombination)
+  App.tsx                     только роутинг (BrowserRouter/Routes)
+  layout/
+    Layout.tsx                 state открытости меню, Sidebar + <Outlet />
+    Sidebar.tsx                 нав-меню; выезжающая панель ниже xl
+  styles/
+    main.scss                 точка входа — @forward/@use всех слоёв
+    abstracts/
+      _variables.scss         цветовые токены по роли, spacing-шкала, брейкпоинты (lg: 1024px, xl: 1440px)
+      _mixins.scss             mq($breakpoint) — медиа-запрос по карте брейкпоинтов
+    base/
+      _reset.scss              минимальный ресет (box-sizing, button/input, svg)
+      _base.scss                body/:root
+    utilities/
+      _utilities.scss          flex/align/justify/gap, full-width-until-lg
+    layout/
+      _app-shell.scss           .app-shell (flex-ряд), .app-shell__content (паддинги), .app-shell__menu-trigger (бургер, скрыт с xl)
+      _sidebar.scss              выезжающая панель ниже xl, статичная колонка с xl
+    components/
+      _button.scss             .button + модификаторы (primary/secondary/danger/ghost, lg/modal/sm, icon), .action-row
+      _modal.scss               .modal (оверлей+панель) — общий для Reset/ImportCombinations/AddColor/ConfirmDelete модалок
+      _card.scss                 .card — общая рамка карточки
+      _remove-badge.scss        круглый "×"-бейдж (HeartSwatch)
+      _patterns.scss             .section-label, .section-header (заголовок + кнопка в ряд), .empty-state
+      _granny-square.scss        .granny-square(--fluid), locked/interactive модификаторы рядов
+      _tracked-square-card.scss  карточка в Croching (квадратная, aspect-ratio: 1), номер, бургер-триггер
+      _tracked-square-menu.scss  выпадающее меню действий карточки
+      _square-preview.scss       аналог карточки для списка на главной
+      _saved-combinations.scss   сетка + заголовок секции с кнопками импорта/экспорта
+      _combinations-file-actions.scss  пара кнопок "Загрузить"/"Экспортировать"
+      _cardigan-square-slot.scss  ячейка схемы: пусто/плейсхолдер/fluid-квадрат, галочка "связан"
+      _cardigan-slot-modal.scss   модалка выбора комбинации для слота
+      _<component>.scss          точечные стили остальных компонентов (по одному на каждый ниже)
+    pages/
+      _constructor-page.scss     колонка ниже xl (на всю ширину, страница скроллится), ряд + фиксированная высота с xl
+      _croching-page.scss        вкладки, сетка карточек
+      _knit-square-page.scss     фиксированная высота на всех ширинах; колонка (квадрат первым) ниже xl, ряд с xl
+      _cardigan-page.scss        шапка (заголовок + импорт/экспорт в одну строку с lg), вкладки, диаграмма по ширине
+  types.ts                 общие типы (PaletteColor, SquareRow, SavedCombination, StoredCombination, CrochetProgress)
+  data/
+    yarnLibrary.ts            статичный список цветов библиотеки пряжи
   storage/
     localStorage.ts        типобезопасные get/set с валидацией
     useLocalStorageState.ts generic-хук синхронизации state <-> localStorage
   hooks/
     usePalette.ts            CRUD для палитры (+ replace для импорта)
-    usePrimaryColor.ts       основной цвет: хранение, синхронизация в
-                              заблокированные ряды (PRIMARY_ROW_INDICES)
-    useWorkingSquare.ts      цвет по ряду, resetColors (рядов фиксировано 7)
-    useSavedCombinations.ts  сохранение/список комбинаций (+ replace для импорта)
+    usePrimaryColor.ts       usePrimaryColorValue (чтение+сырой сеттер, для Croching/вязания/кардигана)
+                              и usePrimaryColor (+ синхронизация заблокированных рядов,
+                              только для редактируемого рабочего квадрата)
+    useColorArchive.ts        архив убранных/заменённых цветов (см. выше)
+    useWorkingSquare.ts      цвет по ряду, resetColors (рядов фиксировано 7, DEFAULT_ROW_COUNT)
+    useSavedCombinations.ts  сохранение/список/дублирование комбинаций, нумерация, + replace для импорта
+    useCrochetProgress.ts    прогресс по каждой сохранённой комбинации: done,
+                              revealedRows (+ revealNextRow/revealPreviousRow/setDone)
+    useCardiganLayout.ts     16-слотовая раскладка кардигана: assign (эксклюзивно), replace (для импорта)
     useClampedPosition.ts    позиционирование поповера/меню с учётом краёв экрана
   utils/
     color.ts                 валидация и нормализация hex
     id.ts                    генерация id
-    combinationsFile.ts      сериализация/парсинг JSON-файла экспорта-импорта
+    validate.ts               isRecord — общий примитив для type guard'ов
+    combinationsFile.ts      сериализация/парсинг JSON-файла экспорта-импорта (включая cardiganLayout)
   components/
-    GrannySquare.tsx          SVG-квадрат из концентрических рядов
-                               (подсветка activeRowId, блокировка lockedRowIndices)
-    RowContextMenu.tsx        всплывающее меню у курсора («Изменить цвет»)
-    ColorPickerPopover.tsx    немодальное окно выбора цвета для ряда
-    HeartSwatch.tsx           сердечко-цвет (галочка/крестик/метка "используется")
-    Palette.tsx               список HeartSwatch палитры + удаление
-    AddColorButton.tsx        кнопка + AddColorModal для добавления цветов
-    AddColorModal.tsx         вкладки "свой цвет" / библиотека, singleSelect-режим
-    AddColorForm.tsx          hex-инпут + Сохранить/Удалить
-    LibraryColorPicker.tsx    выбор цветов из библиотеки пряжи
-    AddPrimaryColorButton.tsx кнопка открытия выбора основного цвета
-    PrimaryColorSwatch.tsx    превью выбранного основного цвета
-    ResetColorsModal.tsx      подтверждение сброса цветов квадрата
+    GrannySquare.tsx          SVG-квадрат из концентрических рядов.
+                               activeRowId, lockedRowIndices (клик недоступен);
+                               visibleRowCount — рисует все ряды, но начиная с него
+                               ряд становится "ещё не связан" (прозрачная заливка,
+                               серая рамка) вместо того чтобы пропадать — так видно
+                               очертания всего квадрата; fluid — убирает пиксельные
+                               width/height, размер задаёт CSS-контейнер через viewBox
+    SquarePreview.tsx          квадратная карточка со списком сохранённых комбинаций
+                               (главная страница): fluid-квадрат + номер + "×"
+    ConfirmDeleteModal.tsx    универсальная модалка "Удалить? / Отмена" (title,
+                               description, confirmLabel — параметризуется)
     ImportCombinationsButton.tsx выбор файла + ImportCombinationsModal
-    ImportCombinationsModal.tsx  подтверждение замены данных импортом
-    SavedCombinations.tsx     сетка мини-превью GrannySquare + экспорт в файл
+    ImportCombinationsModal.tsx  подтверждение замены данных импортом (упоминает и
+                               потерю прогресса вязания)
+    CombinationsFileActions.tsx  пара кнопок "Загрузить"/"Экспортировать комбинации",
+                               общая для ConstructorPage, CrochingPage и CardiganPage
+  pages/
+    constructor/
+      ConstructorPage.tsx       композиция: hero (шапка + колонки) + SavedCombinations
+      components/
+        SquareEditor.tsx          только квадрат (fluid) + ColorPickerPopover;
+                                   клик по ряду сразу открывает попап (без меню-прослойки)
+        ColorActionsPanel.tsx     правая колонка: закреплённые Сохранить/Сбросить +
+                                   секция "Основной цвет" сверху, прокручиваемая
+                                   секция "Палитра" снизу
+        Palette.tsx                список HeartSwatch + заголовок с кнопкой-иконкой
+                                   добавления (section-header)
+        PrimaryColorSwatch.tsx    заголовок "Основной цвет" + кнопка-иконка обновления
+                                   (видна всегда, не только когда цвет уже выбран) + свотч
+        AddColorButton.tsx        компактная кнопка-иконка (+) + AddColorModal
+        AddColorModal.tsx         вкладки "свой цвет" / библиотека, singleSelect-режим
+        AddColorForm.tsx          hex-инпут + Сохранить/Удалить
+        LibraryColorPicker.tsx    выбор цветов из библиотеки пряжи
+        ColorPickerPopover.tsx    немодальное окно выбора цвета для ряда
+        HeartSwatch.tsx           сердечко-цвет (галочка/крестик/метка "используется")
+        ResetColorsModal.tsx      подтверждение сброса цветов квадрата
+        SavedCombinations.tsx     заголовок секции (с CombinationsFileActions) + сетка
+                                   SquarePreview; не прячется при 0 комбинаций — иначе
+                                   негде нажать "Загрузить"
+    croching/
+      CrochingPage.tsx            вкладки "Надо связать"/"Связано" (считаются по
+                                   CrochetProgress.done), сетка TrackedSquareCard,
+                                   CombinationsFileActions под подзаголовком
+      KnitSquarePage.tsx          пошаговое вязание по /croching/:id — см. ниже
+      components/
+        TrackedSquareCard.tsx      квадратная карточка (аналог SquarePreview): номер,
+                                   бургер-триггер вместо кликабельного квадрата
+        TrackedSquareMenu.tsx      выпадающее меню карточки: Начать вязать/Открыть,
+                                   Отметить связанным/Снять отметку, Дублировать, Удалить
+    cardigan/
+      CardiganPage.tsx             вкладки трёх схем + диаграмма — см. "Кардиган" выше
+      layouts.ts                   геометрия трёх схем как данные (не JSX/CSS)
+      components/
+        CardiganSquareSlot.tsx      одна ячейка схемы
+        CardiganSlotModal.tsx       выбор/очистка комбинации для слота
 docs/
   requirements.md
   architecture.md
@@ -109,51 +398,100 @@ docs/
 
 ## Поток взаимодействия
 
-1. `App` держит связку из четырёх хуков (`usePalette`, `useWorkingSquare`,
-   `usePrimaryColor`, `useSavedCombinations`) и раскладывает layout: квадрат
-   слева, палитра и кнопки-действия справа, сохранённые комбинации снизу.
-   Квадрат — фиксированные 7 рядов, `addRow`/`removeRow` не существует.
+### Конструктор (`/`)
+
+1. `ConstructorPage` держит связку хуков (`usePalette`, `useWorkingSquare`,
+   `usePrimaryColor`, `useColorArchive`, `useSavedCombinations`,
+   `useCardiganLayout`) и раскладывает layout: квадрат слева (с `xl`) на
+   всю высоту экрана, кнопки управления и палитра справа, сохранённые
+   комбинации — ниже, под скроллом (см. «Роутинг и layout» выше про
+   поведение ниже `xl`). Квадрат — фиксированные 7 рядов,
+   `addRow`/`removeRow` не существует.
 2. Ряды 6 и 7 (`PRIMARY_ROW_INDICES`) заблокированы для точечного клика
    (`lockedRowIndices` в `GrannySquare`) и всегда показывают `primaryColor`:
    `usePrimaryColor` синхронизирует их цвет напрямую через
    `useWorkingSquare.setRowColor` при каждом изменении основного цвета.
-3. Клик по незаблокированному ряду в `GrannySquare` поднимает
-   `onRowClick(rowId, position)` → `App` открывает `RowContextMenu` в точке
-   клика; ряд подсвечивается как `activeRowId`. Позиция меню и попапа
-   выбора цвета клэмпится в границы экрана через `useClampedPosition`.
-4. «Изменить цвет» — открывает `ColorPickerPopover` поверх экрана
-   (немодальный, закрывается кликом по фону). Клик по сердечку — временный
-   локальный state попапа (превью), не пишет в `useWorkingSquare` до
-   «Сохранить»; уже использованные в квадрате цвета помечаются меткой.
-5. «Сохранить» в попапе — коммитит цвет в `useWorkingSquare`, закрывает
-   попап. «Закрыть» — просто закрывает без коммита.
-6. «Добавить цвета» открывает `AddColorButton` → `AddColorModal` (вкладки
-   «свой цвет» / библиотека), «Сохранить» там валидирует hex через
-   `utils/color.ts` и пишет в `usePalette.addColor`/`addLibraryColors`.
-7. «Добавить основной цвет» открывает тот же `AddColorModal` в режиме
-   `singleSelect` — выбор коммитится через `usePrimaryColor.setPrimaryColor`
-   и сразу применяется к рядам 6–7 (см. пункт 2).
-8. «Сбросить» — открывает `ResetColorsModal`; подтверждение вызывает
-   `useWorkingSquare.resetColors(preserveIds)`, где `preserveIds` — ряды 6–7,
-   чтобы не потерять основной цвет.
-9. Крестик на сердечке в `Palette` — `usePalette.removeColor(id)`; ряды с
-   этим `colorId` в рабочем квадрате и в сохранённых комбинациях остаются
-   как есть в данных, но рендерятся как непокрашенные (цвет не найден в
-   палитре) — так удаление палитры не ломает раньше сохранённое.
-10. «Сохранить» у квадрата — `useSavedCombinations.save(currentRows)`,
-    комбинация уходит в сетку `SavedCombinations` (рендерится тем же
-    `GrannySquare` в компактном режиме, `readOnly`).
-11. «Сохранить комбинации» в `SavedCombinations` — `utils/combinationsFile.ts`
-    сериализует `{ palette, primaryColor, combinations }` в JSON и скачивает
-    файл. «Загрузить комбинации» в `ImportCombinationsButton` парсит и
-    валидирует такой файл (переиспользуя type guard'ы хуков), затем через
-    `ImportCombinationsModal` просит подтвердить полную замену текущих
-    палитры/основного цвета/комбинаций (`App.handleImportCombinations`
-    вызывает `replace` у всех трёх хуков).
+3. Клик по незаблокированному ряду в `GrannySquare` сразу открывает
+   `ColorPickerPopover` в точке клика (`SquareEditor.handleRowClick`) —
+   промежуточного контекстного меню больше нет (`RowContextMenu` удалён).
+   Позиция попапа клэмпится в границы экрана через `useClampedPosition`.
+4. Клик по сердечку в попапе — временный локальный state (превью), не
+   пишет в `useWorkingSquare` до «Сохранить»; уже использованные в
+   квадрате цвета помечаются меткой. «Сохранить» коммитит цвет,
+   «Закрыть» — просто закрывает попап.
+5. «+» рядом с заголовком «Палитра» (`AddColorButton`, внутри
+   `Palette.tsx`) открывает `AddColorModal` (вкладки «свой цвет» /
+   библиотека) → `usePalette.addColor`/`addLibraryColors`.
+6. «+» (иконка обновления) рядом с заголовком «Основной цвет»
+   (`PrimaryColorSwatch.tsx`, видна всегда, даже пока цвет не выбран)
+   открывает тот же `AddColorModal` в режиме `singleSelect` →
+   `ConstructorPage.handleSetPrimaryColor`: старый основной цвет (если
+   был) уходит в архив, затем коммитится новый через
+   `usePrimaryColor.setPrimaryColor` и сразу применяется к рядам 6–7.
+7. «Сбросить» — открывает `ResetColorsModal`; подтверждение вызывает
+   `useWorkingSquare.resetColors(preserveIds)`, где `preserveIds` — ряды
+   6–7, чтобы не потерять основной цвет.
+8. "×" на сердечке в `Palette` — `ConstructorPage.handleRemoveColor`:
+   цвет сначала уходит в архив (`useColorArchive.archive`), затем
+   удаляется из палитры (`usePalette.removeColor`); ряды с этим
+   `colorId` в рабочем квадрате очищаются, в сохранённых комбинациях —
+   продолжают резолвиться через архив.
+9. «Сохранить» у квадрата — `useSavedCombinations.save(currentRows)`,
+   комбинация уходит в сетку `SavedCombinations` (компактный
+   `SquarePreview` с `fluid`-квадратом и номером).
+10. Блок «Загрузить»/«Экспортировать комбинации»
+    (`CombinationsFileActions`) стоит в одной строке с заголовком
+    «Сохранённые комбинации N/16». Экспорт сериализует
+    `{ palette, primaryColor, combinations, cardiganLayout }` в JSON.
+    Импорт парсит и валидирует файл, через `ImportCombinationsModal`
+    просит подтвердить полную замену палитры/основного
+    цвета/комбинаций/раскладки кардигана *и* предупреждает, что прогресс
+    вязания уже начатых квадратов будет потерян (их id исчезнут вместе
+    со старыми комбинациями).
+
+### Croching (`/croching`, `/croching/:id`)
+
+11. `CrochingPage` делит `combinations` на вкладки «Надо связать» /
+    «Связано» по `useCrochetProgress().progress[id].done`. Карточка
+    (`TrackedSquareCard`) показывает только сам квадрат (не кликабелен),
+    номер и кнопку-бургер; клик по бургеру открывает `TrackedSquareMenu`
+    в точке клика с пунктами «Начать вязать»/«Открыть» (навигация на
+    `/croching/:id`), «Отметить связанным»/«Снять отметку» (`setDone`),
+    «Дублировать» (`useSavedCombinations.duplicate` — копия с теми же
+    цветами рядов, новым id/номером/`createdAt`, без прогресса — как
+    новый квадрат) и «Удалить» (через общий `ConfirmDeleteModal` —
+    удаляет и комбинацию, и её запись прогресса).
+12. `KnitSquarePage` — пошаговое вязание конкретной комбинации. Состояние
+    — `CrochetProgress.revealedRows`: `0` — стартовый экран (квадрат
+    полностью собран, кнопки «Начать вязать»/«Закрыть»); `1..rowCount-1`
+    — виден `visibleRowCount` рядов, под квадратом «Ряд N из rowCount,
+    осталось…» и «Текущий цвет» (код + сердечко), кнопки «Назад»
+    (задизейблена на 1-м ряду)/«Дальше»/«Закрыть»; на последнем ряду
+    «Дальше» становится «Квадрат связан» — клик вызывает `setDone(id,
+    true)` и возвращает на `/croching`. Если `progress.done`, страница
+    read-only: квадрат собран целиком, единственная кнопка — «Закрыть».
+13. То же `CombinationsFileActions`, что и в конструкторе, доступно и
+    здесь (под подзаголовком, над вкладками) — страница сама получает
+    `replace` палитры/основного цвета/комбинаций/раскладки кардигана для
+    импорта.
+
+### Кардиган (`/cardigan`)
+
+14. `CardiganPage` — та же `CombinationsFileActions` в шапке, в одну
+    строку с заголовком «Кардиган» (с `lg`). Три вкладки («Схема» по
+    умолчанию, «Спина», «Перед») переключают `CARDIGAN_VIEWS[view]`.
+    Диаграмма — CSS grid, позиции и наличие шва заданы данными в
+    `layouts.ts` (см. «Кардиган» выше).
+15. Клик по слоту (`CardiganSquareSlot`) открывает `CardiganSlotModal` со
+    списком ещё не назначенных комбинаций; выбор или «Очистить» вызывает
+    `useCardiganLayout.assign(slot, id | null)` — эксклюзивно, см. модель
+    данных. Зелёная галочка на занятом слоте читает тот же
+    `CrochetProgress.done`, что и `CrochingPage`, но ничего в нём не
+    меняет.
 
 ## Точки расширения под бэклог
 
-- Раскладка кардигана: новый экран/секция, переиспользует `GrannySquare`
-  и `SavedCombination[]` как есть.
 - Калькулятор пряжи: отдельный модуль, на входе — количество рядов и их
   цвета, тоже не требует изменения текущей модели.
+- Возможность добавлять/удалять квадраты на рукаве (рукава сейчас не
+  входят в схему кардигана).

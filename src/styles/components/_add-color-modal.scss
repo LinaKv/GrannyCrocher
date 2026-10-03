@@ -1,0 +1,38 @@
+@use '../abstracts/variables' as v;
+
+.add-color-modal__header {
+  margin-bottom: v.spacing(4);
+}
+
+.add-color-modal__tabs {
+  display: inline-flex;
+  gap: v.spacing(1);
+  border-radius: 9999px;
+  background: v.$color-surface-muted;
+  padding: v.spacing(1);
+}
+
+.add-color-modal__tab {
+  border-radius: 9999px;
+  padding: v.spacing(1) v.spacing(3);
+  font-size: 1rem;
+  font-weight: 500;
+  color: v.$color-text-secondary;
+
+  &--active {
+    background: v.$color-surface;
+    color: v.$color-text-heading;
+    box-shadow: v.$shadow-sm;
+  }
+}
+
+.add-color-modal__close {
+  border-radius: 9999px;
+  padding: v.spacing(1) v.spacing(2);
+  color: v.$color-text-muted;
+
+  &:hover {
+    background: v.$color-surface-hover;
+    color: v.$color-text-strong;
+  }
+}
