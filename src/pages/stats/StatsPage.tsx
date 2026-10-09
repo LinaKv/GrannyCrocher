@@ -7,9 +7,10 @@ import { useSavedCombinations } from '../../hooks/useSavedCombinations';
 import { computeColorStats, type ColorStatsRow } from './colorStats';
 import { ColorPercentageChart } from './components/ColorPercentageChart';
 import { RowComparisonTab } from './components/RowComparisonTab';
+import { ColorsInRowTab } from './components/ColorsInRowTab';
 import type { PaletteColor } from '../../types';
 
-type View = 'overview' | 'rows';
+type View = 'overview' | 'rows' | 'colors';
 
 export function StatsPage() {
   const [view, setView] = useState<View>('overview');
@@ -82,6 +83,13 @@ export function StatsPage() {
               onClick={() => setView('rows')}
               className={classNames('stats-page__tab', { 'stats-page__tab--active': view === 'rows' })}
             >
+              По цветам
+            </button>
+            <button
+              type="button"
+              onClick={() => setView('colors')}
+              className={classNames('stats-page__tab', { 'stats-page__tab--active': view === 'colors' })}
+            >
               По рядам
             </button>
           </div>
@@ -113,8 +121,10 @@ export function StatsPage() {
                 </table>
               </div>
             </>
-          ) : (
+          ) : view === 'rows' ? (
             <RowComparisonTab rows={regularStats} rowIndices={freeRowIndices} />
+          ) : (
+            <ColorsInRowTab rows={regularStats} rowIndices={freeRowIndices} />
           )}
         </>
       )}

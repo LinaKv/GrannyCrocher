@@ -53,6 +53,14 @@
   width: 100%;
 }
 
+.stats-page__row-summary {
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(1);
+  margin-top: v.spacing(3);
+  color: v.$color-text-secondary;
+}
+
 .stats-page__table-wrapper {
   margin-top: v.spacing(4);
   overflow-x: auto;
