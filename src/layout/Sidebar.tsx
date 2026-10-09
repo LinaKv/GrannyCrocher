@@ -9,8 +9,9 @@ import { downloadCombinationsFile, type CombinationsFile } from '../utils/combin
 
 const NAV_ITEMS = [
   { to: '/', label: 'Конструктор', end: true },
-  { to: '/croching', label: 'Croching', end: false },
+  { to: '/croching', label: 'Квадраты', end: false },
   { to: '/cardigan', label: 'Кардиган', end: false },
+  { to: '/stats', label: 'Статистика', end: false },
 ];
 
 interface SidebarProps {

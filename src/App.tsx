@@ -4,6 +4,7 @@ import { ConstructorPage } from './pages/constructor/ConstructorPage';
 import { CrochingPage } from './pages/croching/CrochingPage';
 import { KnitSquarePage } from './pages/croching/KnitSquarePage';
 import { CardiganPage } from './pages/cardigan/CardiganPage';
+import { StatsPage } from './pages/stats/StatsPage';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="croching" element={<CrochingPage />} />
           <Route path="croching/:id" element={<KnitSquarePage />} />
           <Route path="cardigan" element={<CardiganPage />} />
+          <Route path="stats" element={<StatsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

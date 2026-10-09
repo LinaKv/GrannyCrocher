@@ -14,6 +14,14 @@ export function normalizeHex(value: string): string {
   return trimmed;
 }
 
+export function hexToRgba(hex: string, alpha: number): string {
+  const normalized = normalizeHex(hex);
+  const r = parseInt(normalized.slice(1, 3), 16);
+  const g = parseInt(normalized.slice(3, 5), 16);
+  const b = parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // Picks readable text color for a label placed on top of a hex fill,
 // using the standard relative-luminance contrast formula (WCAG).
 export function getReadableTextColor(hex: string): string {
