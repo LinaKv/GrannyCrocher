@@ -1,0 +1,71 @@
+@use '../abstracts/variables' as v;
+
+// Always an overlay drawer, unlike .sidebar which turns into a static
+// column at xl — this is page-scoped filtering, not global nav.
+.croching-filter-drawer__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 85;
+  background: v.$color-overlay;
+}
+
+.croching-filter-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 95;
+  width: 22rem;
+  max-width: 90vw;
+  transform: translateX(100%);
+  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: v.spacing(3);
+  padding: v.spacing(4);
+  background: v.$color-surface;
+  border-left: 1px solid v.$color-border;
+  overflow-y: auto;
+
+  &--open {
+    transform: translateX(0);
+  }
+}
+
+.croching-filter-drawer__title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: v.$color-text-heading;
+}
+
+.croching-filter-drawer__close {
+  border-radius: 9999px;
+  padding: v.spacing(1) v.spacing(2);
+  color: v.$color-text-muted;
+
+  &:hover {
+    background: v.$color-surface-hover;
+    color: v.$color-text-strong;
+  }
+}
+
+.croching-filter-drawer__row-label {
+  margin-bottom: v.spacing(1);
+  font-weight: 500;
+  color: v.$color-text-strong;
+}
+
+.croching-filter-drawer__no-color {
+  padding: v.spacing(1.5) v.spacing(3);
+  border-radius: 9999px;
+  border: 1px dashed v.$color-border;
+  color: v.$color-text-secondary;
+  font-size: 0.875rem;
+
+  &--active {
+    border-style: solid;
+    border-color: v.$color-primary;
+    background: v.$color-primary;
+    color: v.$color-text-inverse;
+  }
+}

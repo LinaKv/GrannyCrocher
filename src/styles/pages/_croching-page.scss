@@ -8,9 +8,16 @@
 }
 
 .croching-page__subtitle {
-  margin-top: v.spacing(2);
   font-size: 1rem;
   color: v.$color-text-secondary;
+}
+
+.croching-page__header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: v.spacing(3);
+  margin-top: v.spacing(2);
 }
 
 .croching-page__empty {
@@ -19,6 +26,7 @@
 
 .croching-page__tabs {
   display: flex;
+  align-items: center;
   gap: v.spacing(2);
   margin-top: v.spacing(4);
 }
@@ -35,6 +43,82 @@
   &--active {
     background: v.$color-primary;
     color: v.$color-text-inverse;
+  }
+}
+
+.croching-page__filter-toggle {
+  position: relative;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  border-radius: 9999px;
+  background: v.$color-surface-muted;
+  color: v.$color-text-strong;
+  font-weight: 500;
+
+  &--active {
+    background: v.$color-primary;
+    color: v.$color-text-inverse;
+  }
+}
+
+.croching-page__filter-toggle-trigger {
+  display: flex;
+  align-items: center;
+  gap: v.spacing(2);
+  padding: v.spacing(2);
+
+  @include m.mq(lg) {
+    padding: v.spacing(2) v.spacing(3);
+  }
+}
+
+// Icon-only on phones to save space in the tabs row — the badge takes over
+// showing the active count there, since the label with "(N)" is hidden.
+.croching-page__filter-toggle-label {
+  display: none;
+
+  @include m.mq(lg) {
+    display: inline;
+  }
+}
+
+// Sits after the label where there's room for it, on top of the count text.
+.croching-page__filter-toggle-reset {
+  display: none;
+  padding: v.spacing(2) v.spacing(3) v.spacing(2) 0;
+  font-size: 1.125rem;
+  line-height: 1;
+  opacity: 0.6;
+
+  &:hover {
+    opacity: 1;
+  }
+
+  @include m.mq(lg) {
+    display: inline-flex;
+  }
+}
+
+// Replaces the count badge with a tap target once a filter is active —
+// there's no room on a 16px icon for both a number and a separate × target.
+.croching-page__filter-toggle-badge {
+  position: absolute;
+  top: -0.25rem;
+  right: -0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 9999px;
+  background: v.$color-danger;
+  color: v.$color-text-inverse;
+  font-size: 0.6875rem;
+  line-height: 1;
+
+  @include m.mq(lg) {
+    display: none;
   }
 }
 

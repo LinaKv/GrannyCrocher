@@ -1,26 +1,20 @@
 import classNames from 'classnames';
 import type { SavedCombination } from '../../../types';
 import { GrannySquare } from '../../../components/GrannySquare';
+import { useCardiganContext } from '../CardiganContext';
 
 interface CardiganSquareSlotProps {
   slot: number;
   col: number;
   row: number;
   combination: SavedCombination | undefined;
-  colorById: Map<string, string>;
   done: boolean;
   onClick: () => void;
 }
 
-export function CardiganSquareSlot({
-  slot,
-  col,
-  row,
-  combination,
-  colorById,
-  done,
-  onClick,
-}: CardiganSquareSlotProps) {
+export function CardiganSquareSlot({ slot, col, row, combination, done, onClick }: CardiganSquareSlotProps) {
+  const { colorById } = useCardiganContext();
+
   return (
     <button
       type="button"
